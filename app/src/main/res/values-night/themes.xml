@@ -1,0 +1,5 @@
+<resources>
+    <style name="Theme.MedikamentenTracker" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/fenster_hintergrund</item>
+    </style>
+</resources>

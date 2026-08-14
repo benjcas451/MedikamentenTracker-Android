@@ -1,0 +1,8 @@
+<resources>
+    <!-- Nur die Hülle um den Compose-Inhalt: keine ActionBar, Fenster-
+         hintergrund nach Design-Guide (weiß bzw. dunkles Grau), damit beim
+         App-Start kein andersfarbiger Frame aufblitzt. -->
+    <style name="Theme.MedikamentenTracker" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/fenster_hintergrund</item>
+    </style>
+</resources>

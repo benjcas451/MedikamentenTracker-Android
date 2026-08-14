@@ -1,0 +1,10 @@
+# Vorlage – kopiere diese Datei nach android/key.properties und trage deine
+# echten Werte ein. key.properties ist in .gitignore und darf NIE ins Repo.
+#
+# storeFile: Pfad zum Keystore. Absoluter Pfad ist am einfachsten, z. B.
+#   derselbe Upload-Keystore wie bei der Flutter-App (GitHub-Secret PLAY_KEYSTORE_BASE64)
+
+storePassword=DEIN_STORE_PASSWORT
+keyPassword=DEIN_KEY_PASSWORT
+keyAlias=upload
+storeFile=/ABSOLUTER/PFAD/zum/upload-keystore.jks
