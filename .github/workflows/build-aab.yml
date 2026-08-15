@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       play_upload:
-        description: "Bundles zusätzlich in die Play-Tracks hochladen (alpha / wear:alpha)"
+        description: "Bundles zusätzlich in die Play-Tracks hochladen (alpha / wear:Alpha)"
         type: boolean
         default: true
 
@@ -99,14 +99,14 @@ jobs:
       # sein (Formfaktor Wear OS aktivieren). Schlägt der Schritt mit
       # "track not found" fehl, listet die Fehlermeldung die verfügbaren
       # Track-Namen – dann hier exakt übernehmen (bei Stillzeit: "wear:Alpha").
-      - name: Wear-AAB in Play hochladen (wear:alpha)
+      - name: Wear-AAB in Play hochladen (wear:Alpha)
         if: ${{ inputs.play_upload }}
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: org.dwarftsch.medikamente
           releaseFiles: wear/build/outputs/bundle/release/wear-release.aab
-          tracks: "wear:alpha"
+          tracks: "wear:Alpha"
           status: completed
 
       - name: Keystore aufräumen
