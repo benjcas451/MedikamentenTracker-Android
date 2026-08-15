@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import org.dwarftsch.medikamente.MedEntry
 import org.dwarftsch.medikamente.MedStats
@@ -16,6 +17,7 @@ import org.dwarftsch.medikamente.data.AppSettings
 import org.dwarftsch.medikamente.data.CertSource
 import org.dwarftsch.medikamente.data.MedService
 import org.dwarftsch.medikamente.data.createConfiguredMedService
+import org.dwarftsch.medikamente.wear.WatchChangeBus
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -52,6 +54,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private var service: MedService? = null
 
     init {
+        // Schreibzugriffe der Uhr lösen ein Neuladen aus.
+        viewModelScope.launch {
+            WatchChangeBus.aenderungen.drop(1).collect { aktualisieren() }
+        }
         datenquelleNeuAufbauen()
     }
 

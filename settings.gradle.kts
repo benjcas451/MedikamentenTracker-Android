@@ -24,3 +24,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "MedikamentenTracker"
 include(":app")
+// Native Wear-OS-App. Wird als eigenes Bundle gebaut und in Play ueber den
+// Formfaktor-Track "wear:<track>" verteilt – gleiche applicationId und
+// gleicher Upload-Key wie :app.
+include(":wear")

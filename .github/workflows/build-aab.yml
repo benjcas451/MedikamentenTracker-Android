@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       play_upload:
-        description: "Bundle zusätzlich in den Play-Track (alpha) hochladen"
+        description: "Bundles zusätzlich in die Play-Tracks hochladen (alpha / wear:alpha)"
         type: boolean
         default: true
 
@@ -51,16 +51,16 @@ jobs:
           keyPassword=$KEY_PW
           EOF
 
-      # versionCode = 100 + run_number: bleibt strikt monoton und liegt
-      # sicher über den bereits im Play Store verwendeten Codes der
-      # Flutter-App (dort war versionCode = run_number, zuletzt <= 6).
-      # APK fürs GitHub-Release (direkt installierbar), Bundle nur für Play.
-      - name: Signierte APK bauen
-        run: ./gradlew :app:assembleRelease -PbuildNumber=$((100 + GITHUB_RUN_NUMBER))
+      # versionCode = 100 + run_number (Handy) bzw. + 1000 Versatz (Uhr):
+      # bleibt strikt monoton und liegt sicher über den bereits im Play Store
+      # verwendeten Codes der Flutter-App (dort war versionCode = run_number,
+      # zuletzt <= 6). APKs fürs GitHub-Release, Bundles nur für Play.
+      - name: Signierte APKs bauen (Handy + Wear)
+        run: ./gradlew :app:assembleRelease :wear:assembleRelease -PbuildNumber=$((100 + GITHUB_RUN_NUMBER))
 
-      - name: Signiertes App-Bundle für Play bauen
+      - name: Signierte App-Bundles für Play bauen
         if: ${{ inputs.play_upload }}
-        run: ./gradlew :app:bundleRelease -PbuildNumber=$((100 + GITHUB_RUN_NUMBER))
+        run: ./gradlew :app:bundleRelease :wear:bundleRelease -PbuildNumber=$((100 + GITHUB_RUN_NUMBER))
 
       - name: APK als GitHub-Release veröffentlichen
         uses: svenstaro/upload-release-action@v2
@@ -70,10 +70,21 @@ jobs:
           asset_name: Medikamente-v2.0.0-${{ github.run_number }}.apk
           tag: v2.0.0-${{ github.run_number }}
           overwrite: true
-          body: "Medikamenten-Tracker v2.0.0 (Lauf ${{ github.run_number }}) – signierte APK (Play-Upload erfolgt als App Bundle)"
+          body: "Medikamenten-Tracker v2.0.0 (Lauf ${{ github.run_number }}) – signierte APKs für Handy und Wear OS (Play-Upload erfolgt als App Bundle)"
 
-      # Track-Name ist case-sensitiv; der Closed-Testing-Track der
-      # Flutter-App hieß "alpha" – unverändert weiterverwenden.
+      - name: Wear-APK an dasselbe Release anhängen
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: wear/build/outputs/apk/release/wear-release.apk
+          asset_name: Medikamente-Wear-v2.0.0-${{ github.run_number }}.apk
+          tag: v2.0.0-${{ github.run_number }}
+          overwrite: true
+
+      # Handy- und Uhr-Bundle MÜSSEN in getrennten Schritten (= getrennten
+      # Play-Edits) hochgeladen werden: Play verlangt für Wear OS einen
+      # eigenen Formfaktor-Track. Track-Namen sind case-sensitiv; der
+      # Handy-Closed-Testing-Track der Flutter-App hieß "alpha".
       - name: AAB in Play hochladen (alpha)
         if: ${{ inputs.play_upload }}
         uses: r0adkll/upload-google-play@v1
@@ -82,6 +93,20 @@ jobs:
           packageName: org.dwarftsch.medikamente
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
           tracks: alpha
+          status: completed
+
+      # Der Wear-Formfaktor-Track muss in der Play Console einmalig angelegt
+      # sein (Formfaktor Wear OS aktivieren). Schlägt der Schritt mit
+      # "track not found" fehl, listet die Fehlermeldung die verfügbaren
+      # Track-Namen – dann hier exakt übernehmen (bei Stillzeit: "wear:Alpha").
+      - name: Wear-AAB in Play hochladen (wear:alpha)
+        if: ${{ inputs.play_upload }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: org.dwarftsch.medikamente
+          releaseFiles: wear/build/outputs/bundle/release/wear-release.aab
+          tracks: "wear:alpha"
           status: completed
 
       - name: Keystore aufräumen

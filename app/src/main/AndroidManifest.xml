@@ -23,6 +23,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Nimmt Anfragen der Wear-OS-App entgegen (Data-Layer-RPC).
+             Pfad und Protokoll: siehe wear/WearRequestService. -->
+        <service
+            android:name=".wear.WearRequestService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.REQUEST_RECEIVED" />
+                <data
+                    android:scheme="wear"
+                    android:host="*"
+                    android:pathPrefix="/medikamente" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

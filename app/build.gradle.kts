@@ -90,8 +90,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlinx.coroutines.android)
 
-    // REST-API (unterstuetzt PATCH und mTLS, anders als HttpURLConnection).
+    // REST-API (unterstuetzt mTLS, anders als HttpURLConnection).
     implementation(libs.okhttp)
+    // Data-Layer-API: Anfragen der Wear-OS-App (WearRequestService).
+    implementation(libs.play.services.wearable)
     // Zertifikats-Ordner via Storage Access Framework.
     implementation(libs.androidx.documentfile)
 

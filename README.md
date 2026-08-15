@@ -1,15 +1,29 @@
-# Medikamenten-Tracker (Android)
+# Medikamenten-Tracker (Android + Wear OS)
 
 Native Android-App zur Erfassung eingenommener Medikamente (Freitext +
-Zeitpunkt). Kotlin, Jetpack Compose, AGP 9 mit Built-in Kotlin. Portiert
-von einer Flutter-App — Bestandsdaten und -einstellungen werden beim
-Update nahtlos übernommen (Details unten).
+Zeitpunkt), mit eigenständiger Wear-OS-App. Kotlin, Jetpack Compose,
+AGP 9 mit Built-in Kotlin. Portiert von einer Flutter-App — Bestandsdaten
+und -einstellungen werden beim Update nahtlos übernommen (Details unten).
 
 Schwester-Repos: **MedikamentenTracker-XCode** (iOS + watchOS, gleicher
 Funktionsumfang, gleiches Design) und **StillzeitTracker-Android/-XCode**
 (gleiche Architektur- und Design-Familie).
 
 ---
+
+## Module
+
+| Modul | Was | applicationId |
+|---|---|---|
+| `:app` | Telefon-App (Compose, Material 3) | `org.dwarftsch.medikamente` |
+| `:wear` | Wear-OS-App (Compose for Wear OS) | `org.dwarftsch.medikamente` (namespace `…medikamente.wear`) |
+
+Beide Module tragen **dieselbe applicationId** — Voraussetzung dafür, dass
+Play die Uhr-App als Wear-Variante derselben App ausliefert und die
+Data-Layer-API Telefon und Uhr einander zuordnet. Deshalb niemals beide
+Debug-Varianten wahllos installieren: `:wear:installDebug` würde auf einem
+Telefon-Emulator die Telefon-App ersetzen. Immer gezielt per
+`adb -s <gerät> install` arbeiten.
 
 ## Einrichtung auf einem neuen Gerät
 
@@ -32,35 +46,55 @@ Funktionsumfang, gleiches Design) und **StillzeitTracker-Android/-XCode**
 ## Bauen & Testen
 
 ```bash
-# Debug-APK
-./gradlew :app:assembleDebug
+# Debug-APKs
+./gradlew :app:assembleDebug :wear:assembleDebug
 
 # Release (signiert, falls key.properties vorhanden)
-./gradlew :app:assembleRelease
+./gradlew :app:assembleRelease :wear:assembleRelease
 
-# Play-Bundle; buildNumber steuert den versionCode (siehe Versionierung)
-./gradlew :app:bundleRelease -PbuildNumber=123
+# Play-Bundles; buildNumber steuert den versionCode (siehe Versionierung)
+./gradlew :app:bundleRelease :wear:bundleRelease -PbuildNumber=123
+
+# Wear-App gezielt auf dem Uhr-Emulator installieren und starten
+adb -s <wear-emulator> install -r wear/build/outputs/apk/debug/wear-debug.apk
+adb -s <wear-emulator> shell am start \
+  -n org.dwarftsch.medikamente/org.dwarftsch.medikamente.wear.MainActivity
 ```
+
+Die Wear-App verlangt keine gekoppelte Uhr zum Starten — ohne erreichbares
+Telefon zeigt sie den zuletzt gespiegelten Stand bzw. „Handy nicht
+erreichbar“ mit Reconnect-Button.
 
 ## Versionierung
 
-- `versionName`: manuell in `app/build.gradle.kts`.
+- `versionName`: manuell in `app/` und `wear/build.gradle.kts`.
   **Konvention:** Major/Minor (1.x.x, x.1.x) sind über alle Plattformen
   (Android **und** iOS) identisch; die Patch-Stelle darf pro Plattform
   divergieren.
 - `versionCode`: `-PbuildNumber=<n>` (lokaler Fallback im Buildfile).
-  Die CI übergibt `100 + github.run_number`. Play verlangt strikt
-  steigende Codes; die Flutter-App nutzte `run_number` direkt (zuletzt
-  ≤ 6), der 100er-Versatz liegt sicher darüber.
+  Die CI übergibt `100 + github.run_number`; die Uhr addiert fest `+1000`.
+  Play verlangt strikt steigende Codes **pro Formfaktor-Track**; die
+  Flutter-App nutzte `run_number` direkt (zuletzt ≤ 6), der 100er-Versatz
+  liegt sicher darüber.
 
 ## CI / Releases (`.github/workflows/build-aab.yml`)
 
 Manuell per *workflow_dispatch*. Ein Lauf:
 
-1. baut eine signierte **APK** und hängt sie an ein GitHub-Release
-   (`v<version>-<run_number>`) — direkt installierbar,
-2. baut zusätzlich ein **App Bundle** und lädt es in den Play-Track
-   `alpha` — nur wenn der Schalter `play_upload` (Default: an) gesetzt ist.
+1. baut signierte **APKs** (Telefon + Wear) und hängt sie an ein
+   GitHub-Release (`v<version>-<run_number>`) — direkt installierbar,
+2. baut zusätzlich **App Bundles** und lädt sie in die Play-Tracks
+   (`alpha` bzw. `wear:alpha`) — nur wenn der Schalter `play_upload`
+   (Default: an) gesetzt ist.
+
+**Play-Besonderheiten (bei Stillzeit hart erarbeitet):**
+- Wear OS braucht einen **eigenen Formfaktor-Track**, der in der Console
+  einmalig aktiviert werden muss. Telefon- und Wear-Bundle werden in
+  **getrennten Schritten** (= getrennten Play-Edits) hochgeladen.
+- Track-Namen sind **case-sensitiv** — schlägt der Wear-Upload mit
+  „track not found“ fehl, listet die Fehlermeldung die verfügbaren Namen
+  (bei Stillzeit hieß der Track `wear:Alpha`).
+- Play verteilt aus dem Wear-Track automatisch an gekoppelte Uhren.
 
 Benötigte **Repository-Secrets** (nur Namen, Werte niemals dokumentieren;
 identische Namen wie im abgelösten Flutter-Repo — von dort übernehmen):
@@ -92,12 +126,32 @@ data/ClientCertificates.kt   PEM (crt/key) -> SSLSocketFactory, inkl. PKCS#1->#8
 data/CertSource.kt           SAF-Ordner mit client.crt/client.key
 data/AppSettings.kt          Prefs + Flutter-Migration
 data/LocalBackupService.kt   JSON-Backup (Format kompatibel zu iOS/Flutter)
+wear/WearRequestService.kt   Data-Layer-RPC-Endpunkt für die Uhr
 ui/…                         Compose-UI (Theme, Home, Settings, Dialoge)
 ```
 
 **Datenquellen (vom Nutzer wählbar):** Server per mTLS-Client-Zertifikat
 (API-Key optional zusätzlich), Server per API-Key (`X-API-Key`-Header)
 oder lokale SQLite ohne Sync.
+
+## Watch-Protokoll (Data-Layer-API)
+
+Die Uhr sendet `MessageClient.sendRequest` an den Pfad
+`/medikamente/request`; `WearRequestService` antwortet. JSON, UTF-8,
+gleiche Hülle wie bei Stillzeit:
+
+```
+Anfrage:  {"action": "...", "arguments": { ... }}
+Antwort:  {"ok": true, "data": { ... }}  bzw.  {"ok": false, "error": "..."}
+```
+
+Aktionen: `getDashboard` (Heute-/7-Tage-Zähler + letzte 12 Einträge),
+`createEntry` (`{"medikament": "...", "time"?: ISO8601}`), `undoLast`.
+Die Uhr hat **keine eigene Datenquelle** — alles läuft über die auf dem
+Telefon gewählte Quelle (wie bei der Apple-Watch-Variante). Sie spiegelt
+das letzte Dashboard lokal und bietet die zuletzt verwendeten Medikamente
+als Ein-Tipp-Kacheln an. Das Telefon meldet die Capability
+`medikamente_phone_app` (res/values/wear.xml).
 
 ## REST-API & Datenmodell
 

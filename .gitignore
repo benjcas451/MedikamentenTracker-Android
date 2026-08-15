@@ -21,3 +21,7 @@ local.properties
 # Build-/IDE-Artefakte
 .kotlin/
 /.idea/
+
+# Von Android Studio abgelegte Build-Artefakte
+app/release/
+wear/release/
