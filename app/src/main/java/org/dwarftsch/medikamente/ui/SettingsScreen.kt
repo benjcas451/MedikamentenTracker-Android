@@ -122,6 +122,20 @@ Tabelle "entries":
   TEXT, Zeitpunkt als ISO 8601 in UTC gespeichert (dadurch chronologisch sortierbar), Anzeige in lokaler Zeit
 
 Die Statistik (heute / 7 Tage / 3 Wochen / 30 Tage) wird lokal aus diesen Einträgen berechnet – mit Aufschlüsselung je Medikament wie die Server-API.
+
+Sicherung & Gerätewechsel
+
+Android sichert die App automatisch. Was dabei mitgeht, legt die App bewusst unterschiedlich fest:
+
+• Cloud-Backup (über das Google-Konto)
+  Nur die Einträge (SQLite). Die Einstellungen bleiben außen vor, weil dort der API-Key steht – der soll nicht auf fremde Server. Nach einer Wiederherstellung aus der Cloud sind also alle Einträge da, Server-Adresse und API-Key müssen aber neu eingetragen werden.
+
+• Direkter Gerätewechsel (altes Gerät → neues Gerät)
+  Zusätzlich die Einstellungen inklusive API-Key. Diese Übertragung läuft Ende-zu-Ende-verschlüsselt unmittelbar zwischen den beiden Geräten.
+
+Den Zertifikats-Ordner für mTLS muss man in beiden Fällen neu auswählen: die Leseberechtigung darauf gilt nur auf dem Gerät, auf dem sie erteilt wurde, und lässt sich technisch nicht mitnehmen.
+
+Davon unabhängig bleibt das manuelle JSON-Backup weiter unten – es nimmt die Einträge mit, egal wohin. Beim Wiederherstellen sind Dateien bis 16 MB zulässig; alles darüber lehnt die App ab, statt beim Einlesen den Arbeitsspeicher zu sprengen.
 """
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
