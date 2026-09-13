@@ -33,8 +33,8 @@ android {
         // versionCode der Flutter-App liegen (zuletzt 6). Die CI uebergibt
         // -PbuildNumber=100+run_number (siehe .github/workflows/build-aab.yml),
         // lokal gilt der Fallback.
-        versionCode = (findProperty("buildNumber") as String?)?.toIntOrNull() ?: 7
-        versionName = "2.0.0"
+        versionCode = (findProperty("buildNumber") as String?)?.toIntOrNull() ?: 8
+        versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

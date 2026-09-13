@@ -25,7 +25,8 @@ import java.time.format.DateTimeFormatter
  *
  * Authentifizierung:
  *  - mTLS-Client-Zertifikat über [certSource] (Transport-Ebene), und/oder
- *  - API-Key über den Header `X-API-Key` ([apiKey]).
+ *  - API-Key über den Header `X-API-Key` ([apiKey]), und/oder
+ *  - Cloudflare-Access-Service-Token ([cfToken]).
  *
  * Der API-Key ist optional: manche Instanzen verlangen ihn, andere sichern
  * nur über mTLS ab. Endpunkte und JSON-Felder identisch zur Flutter-App.
@@ -37,6 +38,8 @@ class ApiService(
     private val baseUrl: String,
     /** Wird als `X-API-Key`-Header mitgesendet, falls gesetzt. */
     private val apiKey: String? = null,
+    /** Cloudflare-Access-Service-Token; null ohne Access davor. */
+    private val cfToken: CloudflareServiceToken? = null,
 ) : MedService {
 
     private var client: OkHttpClient? = null
@@ -81,11 +84,15 @@ class ApiService(
                 .header("Accept", "application/json")
                 .apply {
                     if (!apiKey.isNullOrEmpty()) header("X-API-Key", apiKey)
+                    cfToken?.anwenden(this)
                 }
                 .method(method, body?.let { anfrageKoerper(it) } ?: if (method == "POST") ByteArray(0).toRequestBody() else null)
                 .build()
 
             httpClient().newCall(request).execute().use { response ->
+                CloudflareServiceToken.abweisung(response)?.let {
+                    throw ApiException(it, statusCode = response.code)
+                }
                 val text = response.body?.string().orEmpty()
                 val ok = response.code in 200..299
 

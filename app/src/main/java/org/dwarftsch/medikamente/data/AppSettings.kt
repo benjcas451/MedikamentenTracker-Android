@@ -11,6 +11,12 @@ enum class DataSourceMode(val gespeichert: String) {
     /** Server-API mit API-Key (X-API-Key-Header) statt Client-Zertifikat. */
     API_KEY("apiKey"),
 
+    /**
+     * Server-API hinter Cloudflare Access, ausgewiesen per Service Token
+     * (`CF-Access-Client-Id`/`CF-Access-Client-Secret`).
+     */
+    CLOUDFLARE("cloudflare"),
+
     /** Immer die lokale SQLite-Datenbank. */
     DEMO("demo");
 
@@ -55,6 +61,31 @@ class AppSettings(context: Context) {
         get() = ladeUrl(KEY_API_KEY_BASE_URL)
         set(value) = prefs.edit().putString(KEY_API_KEY_BASE_URL, value.trim()).apply()
 
+    /** Basis-URL der API hinter Cloudflare Access; leer, solange keine hinterlegt ist. */
+    var cloudflareBaseUrl: String
+        get() = ladeUrl(KEY_CLOUDFLARE_BASE_URL)
+        set(value) = prefs.edit().putString(KEY_CLOUDFLARE_BASE_URL, value.trim()).apply()
+
+    /**
+     * Client-ID des Cloudflare Service Tokens; endet üblicherweise auf
+     * `.access`.
+     */
+    var cfAccessClientId: String
+        get() = prefs.getString(KEY_CF_CLIENT_ID, "").orEmpty()
+        set(value) = prefs.edit().putString(KEY_CF_CLIENT_ID, value.trim()).apply()
+
+    /** Client-Secret des Cloudflare Service Tokens. */
+    var cfAccessClientSecret: String
+        get() = prefs.getString(KEY_CF_CLIENT_SECRET, "").orEmpty()
+        set(value) = prefs.edit().putString(KEY_CF_CLIENT_SECRET, value.trim()).apply()
+
+    /**
+     * Das hinterlegte Service Token, oder null solange eine Hälfte fehlt –
+     * mit einer Hälfte weist Cloudflare die Anfrage genauso ab wie ganz ohne.
+     */
+    fun cfServiceToken(): CloudflareServiceToken? =
+        CloudflareServiceToken.of(cfAccessClientId, cfAccessClientSecret)
+
     /** SAF-Ordner-URI der Zertifikate; null, solange keiner gewählt wurde. */
     var certFolderUri: String?
         get() = prefs.getString(KEY_CERT_FOLDER_URI, null)
@@ -85,6 +116,9 @@ class AppSettings(context: Context) {
         const val KEY_API_KEY = "api_key"
         const val KEY_API_BASE_URL = "api_base_url"
         const val KEY_API_KEY_BASE_URL = "api_key_base_url"
+        const val KEY_CLOUDFLARE_BASE_URL = "cloudflare_base_url"
+        const val KEY_CF_CLIENT_ID = "cf_access_client_id"
+        const val KEY_CF_CLIENT_SECRET = "cf_access_client_secret"
         const val KEY_CERT_FOLDER_URI = "cert_folder_uri"
         const val KEY_MIGRIERT = "migriert_von_flutter"
     }
