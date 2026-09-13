@@ -70,6 +70,7 @@ import org.dwarftsch.medikamente.data.CertSource
 import org.dwarftsch.medikamente.data.DataSourceMode
 import org.dwarftsch.medikamente.data.DemoService
 import org.dwarftsch.medikamente.data.LocalBackupService
+import org.dwarftsch.medikamente.data.meldung
 
 /** Beschreibung der REST-API (für den Dialog "Aufbau API"). */
 private const val API_INFO_TEXT = """

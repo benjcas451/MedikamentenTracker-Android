@@ -157,6 +157,9 @@ Models.kt                    MedEntry/MedCount/PeriodStats/MedStats, ISO-Parser
 data/MedService.kt           gemeinsames Interface der Datenquellen
 data/DemoService.kt          lokale SQLite (sqflite-kompatibel)
 data/ApiService.kt           REST-Client (OkHttp; api.php-Actions + mTLS)
+data/Netzfehler.kt           Einordnung: nie gesendet vs. mehrdeutig
+data/OfflineService.kt       Offline-Hülle, Warteschlange + Lesestand,
+                             Verbindungswache (ConnectivityManager)
 data/CloudflareServiceToken.kt Service-Token-Header + Erkennung der
                              Access-Abweisung (Redirect auf die Login-Seite)
 data/ClientCertificates.kt   PEM (crt/key) -> SSLSocketFactory, inkl. PKCS#1->#8
@@ -183,6 +186,48 @@ dem, sodass eine HTML-Seite mit Status 200 ankommt. `ApiService` erkennt das
 am Host der finalen Anfrage (Subdomain von `cloudflareaccess.com`) bzw. an
 einem 403 mit `cf-ray`-Header und meldet es als Token-Problem. Die Uhr ist
 davon nicht betroffen: sie spricht nie selbst mit dem Server.
+
+## Offline-Betrieb
+
+Bricht die Verbindung weg, bleibt die App benutzbar. `OfflineService` legt
+sich dafür über die Server-Quelle (nur in den Server-Modi, nicht im Demo).
+
+**Lesen:** Nach jedem erfolgreichen Laden liegen Einträge und Statistik als
+JSON in `filesDir/offline/` (getrennt, weil die Oberfläche beide nebenläufig
+lädt). Scheitert das Laden an einem Netzwerkfehler, zeigt die App diesen Stand
+statt einer leeren Liste.
+
+**Schreiben:** Was nicht rausging, landet in einer Warteschlange und geht
+raus, sobald die Verbindung steht. In die Warteschlange darf eine Aktion
+**nur** bei `UnknownHostException`, `ConnectException`,
+`NoRouteToHostException` oder `SSLException` — dann hat sie den Server
+nachweislich nie erreicht. Ein `SocketTimeout` oder jede andere `IOException`
+bleibt mehrdeutig: Der Server könnte den Eintrag längst haben, ein zweiter
+Versuch legte dann einen zweiten an.
+
+**Warteschlange.** Neue Einträge bekommen eine negative lokale ID und
+erscheinen sofort in der Liste (mit Uhr-Symbol). Eine Löschung, die einen noch
+wartenden Eintrag trifft, entfernt dessen `Anlegen`-Aktion ersatzlos — dadurch
+beziehen sich alle verbleibenden Löschungen auf echte Server-IDs. Solange
+etwas ansteht, geht auch ein neuer Schreibzugriff hinten dran statt am Stau
+vorbei.
+
+**`undoLast` wird bewusst nicht vorgemerkt.** Wartet noch ein Eintrag, nimmt
+die App ihn direkt aus der Warteschlange. Ist die Warteschlange leer, muss der
+Server ran; offline meldet das einen Fehler. Grund: Die API kennt für
+`undoLast` keine ID, beim Nachholen träfe es womöglich einen Eintrag, den
+jemand anders inzwischen angelegt hat.
+
+**Statistik.** Wartende Einträge werden vollständig eingerechnet, inklusive
+der Aufschlüsselung je Medikament — hier sind es reine Zählungen.
+
+**Abgearbeitet** wird vor jedem Laden und sobald der `ConnectivityManager`
+wieder ein Netz meldet. Beim ersten Verbindungsfehler bricht der Durchlauf ab,
+der Rest bleibt in der Reihenfolge stehen. Vom Server inhaltlich
+zurückgewiesene Aktionen fliegen raus und werden einmal gemeldet. Geschrieben
+wird über eine Nebendatei mit anschliessendem Umbenennen.
+
+Die Ablage hängt am Zugang (Modus + Basis-URL).
 
 ## Watch-Protokoll (Data-Layer-API)
 

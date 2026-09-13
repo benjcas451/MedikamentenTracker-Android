@@ -3,6 +3,7 @@ package org.dwarftsch.medikamente.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -16,7 +17,10 @@ import org.dwarftsch.medikamente.MedStats
 import org.dwarftsch.medikamente.data.AppSettings
 import org.dwarftsch.medikamente.data.CertSource
 import org.dwarftsch.medikamente.data.MedService
+import org.dwarftsch.medikamente.data.OfflineService
+import org.dwarftsch.medikamente.data.Verbindungswache
 import org.dwarftsch.medikamente.data.createConfiguredMedService
+import org.dwarftsch.medikamente.data.meldung
 import org.dwarftsch.medikamente.wear.WatchChangeBus
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -30,6 +34,12 @@ data class HomeUiState(
     val eigeneZeit: LocalDateTime? = null,
     /** Während ein neuer Eintrag gespeichert wird. */
     val speichert: Boolean = false,
+    /** Grund der abgebrochenen Verbindung; null heisst „online“. */
+    val offlineGrund: String? = null,
+    /** Anzahl der Schreibzugriffe, die noch auf Übertragung warten. */
+    val ausstehend: Int = 0,
+    /** IDs, deren Stand noch nicht beim Server ist – die Liste markiert sie. */
+    val ausstehendeIds: Set<Long> = emptySet(),
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -50,18 +60,30 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         meldungenFlow.tryEmit(text)
     }
 
-    /** Aktive Datenquelle: API (mTLS/API-Key) oder lokale SQLite-DB. */
+    /** Aktive Datenquelle: API (mTLS/API-Key/Cloudflare) oder lokale SQLite-DB. */
     private var service: MedService? = null
+
+    /** Beobachtet den Zustand der aktuellen Offline-Hülle; null im Demo. */
+    private var zustandBeobachter: Job? = null
+
+    private val wache = Verbindungswache(application)
 
     init {
         // Schreibzugriffe der Uhr lösen ein Neuladen aus.
         viewModelScope.launch {
             WatchChangeBus.aenderungen.drop(1).collect { aktualisieren() }
         }
+        // Sobald wieder ein Netz da ist, die Warteschlange abarbeiten – ohne
+        // dass der Nutzer etwas antippen muss.
+        wache.starten()
+        viewModelScope.launch {
+            wache.wiederVerbunden.collect { aktualisieren() }
+        }
         datenquelleNeuAufbauen()
     }
 
     override fun onCleared() {
+        wache.beenden()
         service?.dispose()
         super.onCleared()
     }
@@ -72,7 +94,29 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun datenquelleNeuAufbauen() {
         service?.dispose()
-        service = createConfiguredMedService(getApplication(), settings, certSource)
+        zustandBeobachter?.cancel()
+        val neu = createConfiguredMedService(
+            getApplication(), settings, certSource, offlineFaehig = true,
+        )
+        service = neu
+        // Der Offline-Hinweis des alten Zugangs darf nicht über dem neuen
+        // stehen bleiben.
+        state.value = state.value.copy(
+            offlineGrund = null,
+            ausstehend = 0,
+            ausstehendeIds = emptySet(),
+        )
+        if (neu is OfflineService) {
+            zustandBeobachter = viewModelScope.launch {
+                neu.zustand.collect { zustand ->
+                    state.value = state.value.copy(
+                        offlineGrund = zustand.grund,
+                        ausstehend = zustand.ausstehend,
+                        ausstehendeIds = zustand.ausstehendeIds,
+                    )
+                }
+            }
+        }
         aktualisieren()
     }
 
@@ -80,6 +124,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val aktiverService = service ?: return
         state.value = state.value.copy(laedt = true, fehler = null)
         viewModelScope.launch {
+            // Erst das Liegengebliebene loswerden, dann laden: sonst zeigte die
+            // Liste einen Serverstand ohne die eigenen Einträge.
+            warteschlangeAbarbeiten(aktiverService)
             runCatching {
                 coroutineScope {
                     val stats = async { aktiverService.getStats() }
@@ -155,10 +202,21 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
     }
-}
 
-/** Lesbare Meldung einer Exception (ApiException liefert Statuscode mit). */
-internal fun Throwable.meldung(): String = when (this) {
-    is org.dwarftsch.medikamente.data.ApiException -> toString()
-    else -> message ?: toString()
+    /**
+     * Schickt die offenen Schreibzugriffe zum Server. Verworfene Aktionen
+     * (vom Server inhaltlich zurückgewiesene) meldet sie einmal gesammelt.
+     */
+    private suspend fun warteschlangeAbarbeiten(dienst: MedService) {
+        if (dienst !is OfflineService) return
+        val verworfen = dienst.nachholen()
+        if (verworfen.isEmpty()) return
+        meldungenFlow.tryEmit(
+            if (verworfen.size == 1) {
+                "Eine wartende Änderung wurde vom Server abgelehnt: ${verworfen.first()}"
+            } else {
+                "${verworfen.size} wartende Änderungen wurden vom Server abgelehnt."
+            },
+        )
+    }
 }
