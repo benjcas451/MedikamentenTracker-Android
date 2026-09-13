@@ -157,6 +157,8 @@ Models.kt                    MedEntry/MedCount/PeriodStats/MedStats, ISO-Parser
 data/MedService.kt           gemeinsames Interface der Datenquellen
 data/DemoService.kt          lokale SQLite (sqflite-kompatibel)
 data/ApiService.kt           REST-Client (OkHttp; api.php-Actions + mTLS)
+data/CloudflareServiceToken.kt Service-Token-Header + Erkennung der
+                             Access-Abweisung (Redirect auf die Login-Seite)
 data/ClientCertificates.kt   PEM (crt/key) -> SSLSocketFactory, inkl. PKCS#1->#8
 data/CertSource.kt           SAF-Ordner mit client.crt/client.key
 data/AppSettings.kt          Prefs + Flutter-Migration
@@ -166,8 +168,21 @@ ui/…                         Compose-UI (Theme, Home, Settings, Dialoge)
 ```
 
 **Datenquellen (vom Nutzer wählbar):** Server per mTLS-Client-Zertifikat
-(API-Key optional zusätzlich), Server per API-Key (`X-API-Key`-Header)
-oder lokale SQLite ohne Sync.
+(API-Key optional zusätzlich), Server per API-Key (`X-API-Key`-Header),
+Server hinter Cloudflare Access per Service Token (API-Key ebenfalls
+optional zusätzlich) oder lokale SQLite ohne Sync.
+
+Der Cloudflare-Modus (seit 2.1.0) sendet `CF-Access-Client-Id` und
+`CF-Access-Client-Secret` (Prefs-Schlüssel `cf_access_client_id`,
+`cf_access_client_secret`). Beide Hälften gehen nur gemeinsam raus — ein
+halbes Token weist Cloudflare genauso ab wie gar keines.
+
+**Access-Abweisung:** Ohne gültiges Token antwortet Cloudflare nicht mit
+einem Fehler, sondern leitet auf die Login-Seite des Teams um. OkHttp folgt
+dem, sodass eine HTML-Seite mit Status 200 ankommt. `ApiService` erkennt das
+am Host der finalen Anfrage (Subdomain von `cloudflareaccess.com`) bzw. an
+einem 403 mit `cf-ray`-Header und meldet es als Token-Problem. Die Uhr ist
+davon nicht betroffen: sie spricht nie selbst mit dem Server.
 
 ## Watch-Protokoll (Data-Layer-API)
 

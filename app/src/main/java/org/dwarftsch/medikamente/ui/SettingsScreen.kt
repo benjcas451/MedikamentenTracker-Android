@@ -102,6 +102,8 @@ Authentifizierung:
   verlangen ihn, andere sichern nur über mTLS ab – dann ist der Key optional.
 • Im Modus "Server (mTLS-API)" zusätzlich ein Client-Zertifikat
   (client.crt + client.key) auf Transport-Ebene.
+• Im Modus "Server (Cloudflare Access)" zusätzlich die Header
+  "CF-Access-Client-Id: <ID>" und "CF-Access-Client-Secret: <Secret>".
 
 Fehler kommen als {"error": "..."} mit passendem HTTP-Statuscode.
 """
@@ -152,6 +154,9 @@ fun SettingsScreen(
     var mode by remember { mutableStateOf(settings.mode) }
     var apiUrl by remember { mutableStateOf(settings.apiBaseUrl) }
     var apiKeyUrl by remember { mutableStateOf(settings.apiKeyBaseUrl) }
+    var cloudflareUrl by remember { mutableStateOf(settings.cloudflareBaseUrl) }
+    var cfClientId by remember { mutableStateOf(settings.cfAccessClientId) }
+    var cfClientSecret by remember { mutableStateOf(settings.cfAccessClientSecret) }
     var apiKey by remember { mutableStateOf(settings.apiKey) }
     var apiKeySichtbar by remember { mutableStateOf(false) }
     var certsOk by remember { mutableStateOf(false) }
@@ -265,13 +270,19 @@ fun SettingsScreen(
                 untertitel = "API-Key empfohlen (ohne Zertifikat)",
             ) { mode = DataSourceMode.API_KEY; settings.mode = mode }
             ModusZeile(
+                gewaehlt = mode == DataSourceMode.CLOUDFLARE,
+                titel = "Server (Cloudflare Access)",
+                untertitel = "Service Token, API-Key optional",
+            ) { mode = DataSourceMode.CLOUDFLARE; settings.mode = mode }
+            ModusZeile(
                 gewaehlt = mode == DataSourceMode.DEMO,
                 titel = "Lokal (SQLite)",
                 untertitel = "Einträge bleiben nur auf diesem Gerät",
             ) { mode = DataSourceMode.DEMO; settings.mode = mode }
 
-            // Der API-Key wird in beiden Server-Modi mitgesendet, falls
-            // hinterlegt – manche Instanzen verlangen mTLS UND Key.
+            // Der API-Key wird in allen Server-Modi mitgesendet, falls
+            // hinterlegt – manche Instanzen verlangen mTLS bzw. Cloudflare
+            // Access UND Key.
             val apiKeyFeld: @Composable (String?) -> Unit = { hilfe ->
                 OutlinedTextField(
                     value = apiKey,
@@ -311,6 +322,41 @@ fun SettingsScreen(
                 })
                 Spacer(Modifier.height(16.dp))
                 apiKeyFeld("Empfohlen. Ohne API-Key nur für interne Testzwecke.")
+            }
+
+            // Cloudflare Access prüft das Service Token am Rand und reicht die
+            // Anfrage erst danach an den Server weiter. Der API-Key ist wie im
+            // mTLS-Modus optional.
+            if (mode == DataSourceMode.CLOUDFLARE) {
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                Abschnitt("Server (Cloudflare Access)")
+                UrlFeld(wert = cloudflareUrl, onAenderung = {
+                    cloudflareUrl = it
+                    settings.cloudflareBaseUrl = it
+                })
+                Spacer(Modifier.height(16.dp))
+                GeheimFeld(
+                    wert = cfClientId,
+                    titel = "Client-ID",
+                    hinweis = "Client-ID des Service Tokens, endet üblicherweise auf „.access“.",
+                    onAenderung = {
+                        cfClientId = it
+                        settings.cfAccessClientId = it
+                    },
+                )
+                Spacer(Modifier.height(16.dp))
+                GeheimFeld(
+                    wert = cfClientSecret,
+                    titel = "Client-Secret",
+                    hinweis = "Beide Teile nötig. Service Tokens laufen ab, " +
+                        "standardmäßig nach einem Jahr.",
+                    onAenderung = {
+                        cfClientSecret = it
+                        settings.cfAccessClientSecret = it
+                    },
+                )
+                Spacer(Modifier.height(16.dp))
+                apiKeyFeld(null)
             }
 
             if (mode == DataSourceMode.API) {
@@ -498,6 +544,44 @@ private fun ModusZeile(
             )
         }
     }
+}
+
+/**
+ * Verdecktes Eingabefeld mit Auge zum Aufdecken – für die beiden Hälften des
+ * Cloudflare Service Tokens.
+ */
+@Composable
+private fun GeheimFeld(
+    wert: String,
+    titel: String,
+    hinweis: String,
+    onAenderung: (String) -> Unit,
+) {
+    var sichtbar by remember { mutableStateOf(false) }
+    OutlinedTextField(
+        value = wert,
+        onValueChange = onAenderung,
+        shape = MaterialTheme.shapes.medium,
+        colors = mhEingabefeldFarben(),
+        label = { Text(titel) },
+        supportingText = { Text(hinweis) },
+        singleLine = true,
+        visualTransformation = if (sichtbar) {
+            VisualTransformation.None
+        } else {
+            PasswordVisualTransformation()
+        },
+        keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
+        trailingIcon = {
+            IconButton(onClick = { sichtbar = !sichtbar }) {
+                Icon(
+                    if (sichtbar) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                    contentDescription = if (sichtbar) "Verbergen" else "Anzeigen",
+                )
+            }
+        },
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+    )
 }
 
 /** Eingabefeld für eine API-Basis-URL. */

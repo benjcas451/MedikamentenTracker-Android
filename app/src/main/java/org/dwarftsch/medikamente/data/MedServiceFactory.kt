@@ -16,5 +16,12 @@ fun createConfiguredMedService(context: Context, settings: AppSettings, certSour
             baseUrl = settings.apiKeyBaseUrl,
             apiKey = settings.apiKey,
         )
+        // Cloudflare Access sichert den Zugang am Rand; der API-Key ist wie im
+        // mTLS-Modus optional und geht nur raus, wenn er hinterlegt ist.
+        DataSourceMode.CLOUDFLARE -> ApiService(
+            baseUrl = settings.cloudflareBaseUrl,
+            apiKey = settings.apiKey,
+            cfToken = settings.cfServiceToken(),
+        )
         DataSourceMode.DEMO -> DemoService(context)
     }
