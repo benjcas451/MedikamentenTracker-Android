@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed Icon ("Material You"), nachgezeichnet aus der iOS-Variante "Tinted".
+     Nur die Form zählt - der Launcher färbt sie aus der Wallpaper-Palette ein. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+  <path
+      android:fillColor="#FF000000"
+      android:fillType="nonZero"
+      android:pathData="M37.34,44.47C37.28,44.49,36.99,44.54,36.7,44.58C34.86,44.87,33.05,45.82,31.63,47.24C30.26,48.62,29.42,50.18,28.99,52.12C28.9,52.56,28.86,52.99,28.87,53.89C28.87,54.96,28.9,55.17,29.06,55.78C29.55,57.59,30.53,59.25,31.95,60.64C33.5,62.17,35.16,63.05,37.08,63.39C37.62,63.48,38.82,63.49,45.53,63.49L53.37,63.49L53.37,53.96L53.37,44.44L45.41,44.44C41.03,44.45,37.39,44.47,37.34,44.47ZM54.7,53.96L54.7,63.49L62.55,63.49C71.2,63.49,71.2,63.49,72.56,63.06C74.06,62.58,75.29,61.83,76.44,60.69C78.34,58.77,79.34,56.27,79.22,53.68C79.02,49.42,75.09,45.11,70.85,44.51C70.49,44.47,67.67,44.44,62.5,44.44L54.7,44.44L54.7,53.96Z"/>
+</vector>
