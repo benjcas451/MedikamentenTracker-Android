@@ -45,7 +45,7 @@ class WatchModel(context: Context) {
     var dashboard by mutableStateOf<Dashboard?>(null)
         private set
 
-    /** Kurzbestätigung nach dem Anlegen („Ibuprofen ✓“). */
+    /** Kurzbestätigung nach dem Anlegen („Ibuprofen gespeichert“). */
     var bestaetigung by mutableStateOf<String?>(null)
         private set
 

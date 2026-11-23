@@ -13,9 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -28,6 +26,7 @@ import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.wear.compose.material.Colors
 import androidx.wear.compose.material.CompactChip
+import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Scaffold
@@ -37,49 +36,39 @@ import androidx.wear.compose.material.Typography
 import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
 import kotlinx.coroutines.delay
+import org.dwarftsch.medikamente.wear.ui.Figtree
+import org.dwarftsch.medikamente.wear.ui.MhDunkel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-// --- Design-System „Minze & Honig“ (v1.0, Dark-Regeln aus Guide 2.8) ---------
-// Pastelltöne (300) dienen auf dunklem Grund direkt als Akzent; Buttons
-// tragen Füllung 300 mit 900er-Text. Medikamente nutzen durchgehend Minze.
+// --- Design-System „Minze & Honig“ 2.0 --------------------------------------
+// Uhr: nur Farben und Schrift aus 2.0, Aufbau unverändert. Immer dunkel
+// (Rollen aus MhDunkel), Figtree 400/500/600. Farbe ist Signal: die
+// Schnell-Anlegen-Kacheln sind neutrale Flächen, Minze trägt nur die eine
+// Hauptaktion („Erneut versuchen“), das Häkchen und die Ladeanzeige.
 
-private val Minze300 = Color(0xFFA8D5BA)
-private val Minze900 = Color(0xFF22392C)
-private val MinzeDunkel = Color(0xFF263B2F)
-private val Honig300 = Color(0xFFF7E8A4)
-private val Honig900 = Color(0xFF473A17)
-private val Rot300 = Color(0xFFF0B6B1)
-private val Grund = Color(0xFF1F2221)
-private val Karte = Color(0xFF292D2B)
-private val TextHell = Color(0xFFECEFED)
-private val TextSekundaer = Color(0xFFA9B0AB)
+private val F = MhDunkel
 
 private val MedikamenteFarben = Colors(
-    primary = Minze300,
-    primaryVariant = Color(0xFF82BD9B),
-    secondary = Honig300,
-    secondaryVariant = Color(0xFFEDD374),
-    background = Grund,
-    surface = Karte,
-    error = Rot300,
-    onPrimary = Minze900,
-    onSecondary = Honig900,
-    onBackground = TextHell,
-    onSurface = TextHell,
-    onSurfaceVariant = TextSekundaer,
-    onError = Color(0xFF4A211E),
+    primary = F.primary,
+    primaryVariant = F.selectedBg,
+    secondary = F.link,
+    secondaryVariant = F.tint,
+    background = F.bg,
+    surface = F.surface,
+    error = F.danger,
+    onPrimary = F.onPrimary,
+    onSecondary = F.onPrimary,
+    onBackground = F.textStrong,
+    onSurface = F.text,
+    onSurfaceVariant = F.textSecondary,
+    onError = F.onDanger,
 )
 
-/** Nunito – Persönlichkeit über das Gewicht (Guide Abschnitt 3). */
-private val Nunito = FontFamily(
-    Font(R.font.nunito_regular, FontWeight.Normal),
-    Font(R.font.nunito_semibold, FontWeight.SemiBold),
-    Font(R.font.nunito_bold, FontWeight.Bold),
-    Font(R.font.nunito_extrabold, FontWeight.ExtraBold),
-)
-
-private val MedikamenteTypografie = Typography(defaultFontFamily = Nunito)
+/** Figtree; Knöpfe in 500 statt des Wear-Standards Bold. */
+private val MedikamenteTypografie = Typography(defaultFontFamily = Figtree).let {
+    it.copy(button = it.button.copy(fontWeight = FontWeight.Medium))
+}
 
 private val UhrzeitFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
@@ -137,7 +126,7 @@ private fun Inhalt(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Kopf: Heute- und 7-Tage-Zähler auf zarter Minze-Fläche.
+        // Kopf: Heute- und 7-Tage-Zähler, Zahlen dünn in Textfarbe.
         item {
             Row(
                 modifier = Modifier
@@ -146,21 +135,21 @@ private fun Inhalt(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
-                    Text("Heute", fontSize = 11.sp, color = TextSekundaer)
+                    Text("Heute", fontSize = 11.sp, color = F.textSecondary)
                     Text(
                         "${dashboard.todayTotal}",
                         fontSize = 22.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Minze300,
+                        fontWeight = FontWeight.Normal,
+                        color = F.textStrong,
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("7 Tage", fontSize = 11.sp, color = TextSekundaer)
+                    Text("7 Tage", fontSize = 11.sp, color = F.textSecondary)
                     Text(
                         "${dashboard.weekTotal}",
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextHell,
+                        fontWeight = FontWeight.Normal,
+                        color = F.textStrong,
                     )
                 }
             }
@@ -173,7 +162,7 @@ private fun Inhalt(
                 Text(
                     meldung,
                     fontSize = 11.sp,
-                    color = Rot300,
+                    color = F.danger,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
@@ -188,8 +177,8 @@ private fun Inhalt(
                 Text(
                     "Anlegen",
                     fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Minze300,
+                    fontWeight = FontWeight.SemiBold,
+                    color = F.textSecondary,
                     modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
                 )
             }
@@ -201,7 +190,7 @@ private fun Inhalt(
                         Text(
                             name,
                             fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             maxLines = 2,
                         )
                     },
@@ -210,13 +199,13 @@ private fun Inhalt(
                             CircularProgressIndicator(
                                 modifier = Modifier.size(16.dp),
                                 strokeWidth = 2.dp,
-                                indicatorColor = Minze900,
+                                indicatorColor = F.primary,
                             )
                         }
                     },
                     colors = ChipDefaults.chipColors(
-                        backgroundColor = Minze300,
-                        contentColor = Minze900,
+                        backgroundColor = F.surface,
+                        contentColor = F.textStrong,
                     ),
                     modifier = Modifier.fillMaxWidth(0.9f),
                 )
@@ -229,8 +218,8 @@ private fun Inhalt(
                 Text(
                     "Zuletzt",
                     fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Minze300,
+                    fontWeight = FontWeight.SemiBold,
+                    color = F.textSecondary,
                     modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
                 )
             }
@@ -243,15 +232,15 @@ private fun Inhalt(
                     Text(
                         eintrag.medikament,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextHell,
+                        fontWeight = FontWeight.Medium,
+                        color = F.textStrong,
                         maxLines = 2,
                     )
                     Text(
                         "${tagesLabel(eintrag.zeit.toLocalDate())} · " +
                             eintrag.zeit.format(UhrzeitFormat),
                         fontSize = 11.sp,
-                        color = TextSekundaer,
+                        color = F.textSecondary,
                     )
                 }
             }
@@ -260,7 +249,7 @@ private fun Inhalt(
                 Text(
                     "Noch keine Einträge.\nÖffne die App auf dem Handy oder tippe unten.",
                     fontSize = 12.sp,
-                    color = TextSekundaer,
+                    color = F.textSecondary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 12.dp),
                 )
@@ -272,8 +261,8 @@ private fun Inhalt(
                 onClick = model::aktualisieren,
                 label = { Text("Aktualisieren", fontSize = 12.sp) },
                 colors = ChipDefaults.secondaryChipColors(
-                    backgroundColor = Karte,
-                    contentColor = TextHell,
+                    backgroundColor = F.surface,
+                    contentColor = F.text,
                 ),
                 modifier = Modifier.padding(top = 8.dp),
             )
@@ -286,7 +275,7 @@ private fun Inhalt(
 @Composable
 private fun LadeAnsicht() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(indicatorColor = Minze300)
+        CircularProgressIndicator(indicatorColor = F.primary)
     }
 }
 
@@ -294,16 +283,21 @@ private fun LadeAnsicht() {
 private fun BestaetigungsAnsicht(medikament: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("✓", fontSize = 40.sp, color = Minze300, fontWeight = FontWeight.ExtraBold)
+            Icon(
+                painter = painterResource(R.drawable.ic_mh_check),
+                contentDescription = null,
+                tint = F.textGreen,
+                modifier = Modifier.size(40.dp),
+            )
             Text(
                 medikament,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextHell,
+                fontWeight = FontWeight.SemiBold,
+                color = F.textStrong,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            Text("gespeichert", fontSize = 12.sp, color = TextSekundaer)
+            Text("gespeichert", fontSize = 12.sp, color = F.textSecondary)
         }
     }
 }
@@ -320,15 +314,15 @@ private fun FehlerAnsicht(meldung: String, onErneut: () -> Unit) {
         Text(
             meldung,
             fontSize = 13.sp,
-            color = TextHell,
+            color = F.text,
             textAlign = TextAlign.Center,
         )
         CompactChip(
             onClick = onErneut,
             label = { Text("Erneut versuchen", fontSize = 12.sp) },
             colors = ChipDefaults.primaryChipColors(
-                backgroundColor = Minze300,
-                contentColor = Minze900,
+                backgroundColor = F.primary,
+                contentColor = F.onPrimary,
             ),
             modifier = Modifier.padding(top = 10.dp),
         )
