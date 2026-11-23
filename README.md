@@ -266,29 +266,33 @@ Eintrag: `id`, `medikament` (Freitext), `time` (ISO 8601). Fehler:
 `{"error": "..."}` mit passendem HTTP-Status. Die lokale Tabelle
 `entries(id, medikament, time)` spiegelt exakt dieses Modell.
 
-## Design-System „Minze & Honig“ (v1.0)
+## Design-System „Minze & Honig“ 2.0
 
-Quelle der Wahrheit im Code: `app/…/ui/Theme.kt`. Kernregeln:
+Quelle der Wahrheit: Guide `DesignGuide` (`DESIGN_GUIDE.md`,
+`tokens/design-tokens.json`). Im Code: `app/…/ui/MhTheme.kt` (Rollen hell/dunkel,
+Figtree-Typo, Radien, Abstände, `MhTheme {}`) und `app/…/ui/MhBausteine.kt`
+(Kopf, Buttons, Segmentschalter, Listen, Hinweise, Felder). Die Uhr nutzt
+`wear/…/wear/ui/MhTheme.kt` (nur die Dunkel-Rollen und Figtree). Kernregeln:
 
-- **Grundregel:** Weiß dominiert (~80 %), Farbe liegt *auf* dem Grund —
-  nie als Seitenhintergrund. Dark: Grund `#1F2221`, Karten `#292D2B`,
-  Ränder `#3A403C` — kein reines Schwarz.
-- **Skalen 50–900** je Markenfarbe. 300 = Markenton (Flächen/Buttons),
-  100 = zarte Hinweisfläche, 600/700 = text-/icontauglich auf Weiß,
-  900 = Text auf 300er-Flächen. **Pastell (300) nie als Text auf Weiß.**
-- **Markenfarben:** Minze (Primär) `#A8D5BA`/300, Honig (Sekundär)
-  `#F7E8A4`/300, Flieder (Akzent, sparsam) `#CDB4DB`/300; Grau leicht
-  grünstichig; Rot nur semantisch (Fehler/Löschen).
-- **Medikamenten-Einträge:** einheitliches Avatar-Muster in Minze
-  (zarte 100er-Fläche + Icon 700, Dark: `#263B2F` + 300).
-- **Dark Mode:** Pastellflächen (300) bleiben unverändert mit 900er-Text;
-  100er-Flächen werden zu den abgedunkelten Äquivalenten.
-- **Typografie:** ausschließlich **Nunito** (eingebettet, OFL — Lizenz in
-  `app/src/main/assets/OFL_NUNITO.txt`); Persönlichkeit über das Gewicht
-  (400/600/700/800), keine Schriftmischung.
-- **Form:** Radius 8 (klein) / 12 (Buttons, Inputs) / 16 (Karten) /
-  24 (Dialoge) / Pill (Chips). Buttons min. 44 dp Höhe.
-- Kontraste sind WCAG-AA-geprüft; Farbe nie als einziger Informationsträger.
+- **Farbe ist Signal, keine Fläche.** Genau eine Hauptaktion je Ansicht
+  („Anlegen“): Minze-700 mit weißer Schrift, im Dunkeln Minze-400 mit dunkler
+  Schrift. Alles andere ist Haarlinie oder reiner Text, „Löschen“ und
+  „Rückgängig“ sind roter Text.
+- **Haarlinien und Weißraum** statt Karten mit Schatten: Letzter Eintrag,
+  Statistik und Einträge sind Listen mit 1-dp-Linien.
+- **Nur Rollen**, nie Skalenwerte (`Mh.farben.primary`, `textSecondary` …).
+  Dunkel: Grund `#1F2221`, Flächen `#262A28`, Linien `#343A36`, farbiger Text
+  nur aus den Stufen 200/300.
+- **Typografie:** ausschließlich **Figtree** 400/500/600 (eingebettet, OFL —
+  Lizenz in `app/src/main/assets/OFL_FIGTREE.txt` und `licenses/`), keine
+  Kursive, kein Bold. Titel linksbündig, große Zahlen dünn in Textfarbe.
+- **Symbole:** eigene Liniensymbole (`res/drawable/ic_mh_*.xml`, 1,5 px
+  Strich) statt Emojis und Material-Icons.
+- **Form:** Radius 6 (Auswahl) / 10 (Buttons, Felder) / 14 (Karten) /
+  20 (Dialoge). Touch-Ziele mindestens 48 dp.
+- **Uhr:** nur Farben und Schrift aus 2.0, Aufbau unverändert; immer dunkel.
+- Hell/Dunkel folgt dem System, Dynamic Color bleibt aus. Kontraste nach
+  Guide Abschnitt 10; Farbe nie als einziger Informationsträger.
 
 ## Sicherheit / was nie ins Repo darf
 
