@@ -4,14 +4,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -30,6 +27,8 @@ import java.time.ZoneOffset
 /**
  * Zeitpunkt-Auswahl für „Andere Zeit“: erst Datum (bis ein Jahr zurück,
  * nicht in der Zukunft – wie in der Flutter-App), dann Uhrzeit.
+ * Dialoge tragen nur Text-Aktionen; die Hauptaktion der Ansicht bleibt
+ * „Anlegen“.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,21 +56,13 @@ fun ZeitpunktDialog(
             shape = MaterialTheme.shapes.extraLarge,
             onDismissRequest = onAbbrechen,
             confirmButton = {
-                Button(
-                    onClick = {
-                        val millis = datumState.selectedDateMillis ?: return@Button
-                        gewaehltesDatum = Instant.ofEpochMilli(millis)
-                            .atZone(ZoneOffset.UTC).toLocalDate()
-                    },
-                    shape = MaterialTheme.shapes.medium,
-                ) { Text("Weiter") }
+                MhTextButton("Weiter", {
+                    val millis = datumState.selectedDateMillis ?: return@MhTextButton
+                    gewaehltesDatum = Instant.ofEpochMilli(millis)
+                        .atZone(ZoneOffset.UTC).toLocalDate()
+                })
             },
-            dismissButton = {
-                TextButton(
-                    onClick = onAbbrechen,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MinzeHonig.farben.gruenText),
-                ) { Text("Abbrechen") }
-            },
+            dismissButton = { MhTextButton("Abbrechen", onAbbrechen) },
         ) {
             DatePicker(state = datumState, showModeToggle = false)
         }
@@ -84,27 +75,19 @@ fun ZeitpunktDialog(
         AlertDialog(
             shape = MaterialTheme.shapes.extraLarge,
             onDismissRequest = onAbbrechen,
-            title = { Text("Uhrzeit wählen") },
+            title = { Text("Uhrzeit wählen", style = MhTypo.h2) },
             text = { TimePicker(state = zeitState) },
             confirmButton = {
-                Button(
-                    onClick = {
-                        onUebernehmen(
-                            LocalDateTime.of(
-                                gewaehltesDatum ?: LocalDate.now(),
-                                LocalTime.of(zeitState.hour, zeitState.minute),
-                            ),
-                        )
-                    },
-                    shape = MaterialTheme.shapes.medium,
-                ) { Text("Übernehmen") }
+                MhTextButton("Übernehmen", {
+                    onUebernehmen(
+                        LocalDateTime.of(
+                            gewaehltesDatum ?: LocalDate.now(),
+                            LocalTime.of(zeitState.hour, zeitState.minute),
+                        ),
+                    )
+                })
             },
-            dismissButton = {
-                TextButton(
-                    onClick = onAbbrechen,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MinzeHonig.farben.gruenText),
-                ) { Text("Abbrechen") }
-            },
+            dismissButton = { MhTextButton("Abbrechen", onAbbrechen) },
         )
     }
 }
@@ -120,24 +103,10 @@ fun LoeschDialog(
     AlertDialog(
         shape = MaterialTheme.shapes.extraLarge,
         onDismissRequest = onAbbrechen,
-        title = { Text(titel) },
-        text = { Text(text) },
-        confirmButton = {
-            Button(
-                onClick = onLoeschen,
-                shape = MaterialTheme.shapes.medium,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                ),
-            ) { Text("Löschen") }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onAbbrechen,
-                colors = ButtonDefaults.textButtonColors(contentColor = MinzeHonig.farben.gruenText),
-            ) { Text("Abbrechen") }
-        },
+        title = { Text(titel, style = MhTypo.h2) },
+        text = { Text(text, style = MhTypo.body) },
+        confirmButton = { MhLoeschenButton("Löschen", onLoeschen) },
+        dismissButton = { MhTextButton("Abbrechen", onAbbrechen) },
     )
 }
 
@@ -151,17 +120,12 @@ fun InfoDialog(
     AlertDialog(
         shape = MaterialTheme.shapes.extraLarge,
         onDismissRequest = onSchliessen,
-        title = { Text(titel) },
+        title = { Text(titel, style = MhTypo.h2) },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(text)
+                Text(text, style = MhTypo.small)
             }
         },
-        confirmButton = {
-            TextButton(
-                onClick = onSchliessen,
-                colors = ButtonDefaults.textButtonColors(contentColor = MinzeHonig.farben.gruenText),
-            ) { Text("Schließen") }
-        },
+        confirmButton = { MhTextButton("Schließen", onSchliessen) },
     )
 }
