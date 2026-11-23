@@ -12,7 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.dwarftsch.medikamente.ui.HomeScreen
 import org.dwarftsch.medikamente.ui.HomeViewModel
-import org.dwarftsch.medikamente.ui.MedikamenteTheme
+import org.dwarftsch.medikamente.ui.MhTheme
 import org.dwarftsch.medikamente.ui.SettingsScreen
 
 class MainActivity : ComponentActivity() {
@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MedikamenteTheme {
+            MhTheme {
                 val viewModel: HomeViewModel = viewModel()
                 var zeigeEinstellungen by remember { mutableStateOf(false) }
 
